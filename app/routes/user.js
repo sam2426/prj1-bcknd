@@ -21,5 +21,9 @@ module.exports.setRouter = (app) =>{
 
     app.post(`${baseUrl}/logout`, userController.logout);
 
+    app.post(`${baseUrl}/forgetPassword`, userController.forgetPassword);
+
+    app.post(`${baseUrl}/resetPassword`, userController.resetPassword);
+
 }
 

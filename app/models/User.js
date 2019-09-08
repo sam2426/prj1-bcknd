@@ -1,5 +1,6 @@
 const mongoose = require('mongoose');
 const Schema = mongoose.Schema;
+const time=require('./../libs/timeLib');
 
 const userSchema = new Schema({
     userId: {
@@ -18,10 +19,21 @@ const userSchema = new Schema({
     },
     password: {
         type: String,
-        default: 'passskdajakdjkadsj'
+        default: 'password',
+        required: true
     },
     email: {
         type: String,
+        default: '',
+        unique: true,
+        required: true
+    },
+    otp: {
+        type: Number,
+        default: 0
+    },
+    otpExpiry: {
+        type: time,
         default: ''
     },
     mobileNumber: {
@@ -29,8 +41,8 @@ const userSchema = new Schema({
         default: 0
     },
     createdOn: {
-        type: Date,
-        default: ""
+        type: time,
+        default: ''
     }
 })
 

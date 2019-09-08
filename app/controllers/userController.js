@@ -5,6 +5,7 @@ const AuthModel = require('./../models/auth');
 
 const check = require('../libs/checkLib');
 const logger = require('./../libs/loggerLib');
+const mailerLib = require('./../libs/mailerLib');
 const passwordLib = require('./../libs/generatePasswordLib');
 const response = require('./../libs/responseLib');
 const time = require('./../libs/timeLib');
@@ -25,6 +26,7 @@ let signUpFunction = (req, res) => {
                 } else if (!validateInput.Password(req.body.password)) {
                     let apiResponse = response.generate(true, "Password parameters are not met", 400, null);
                     reject(apiResponse);
+                    //include here else if number checker. now if putting string in phone field. unhandled error.
                 } else {
                     resolve(req);
                 }
@@ -62,7 +64,6 @@ let signUpFunction = (req, res) => {
                                 logger.error(err.message, 'userController:dbSaveUser', 10)
                                 let apiResponse = response.generate(true, 'Failed to create new user', 400, null);
                                 reject(apiResponse);
-                                res.send("new user not saved")
                             } else {
                                 let newUserObj = newUser.toObject();
                                 resolve(newUserObj);
@@ -77,7 +78,7 @@ let signUpFunction = (req, res) => {
                 })
         })
     }//createUser function ends
-    
+
     validateUserInput(req, res)
         .then(createUser)
         .then((resolve) => {
@@ -149,7 +150,7 @@ let loginFunction = (req, res) => {
             })
         })
     }
-    
+
     let generateToken = (userDetails) => {
         console.log("generate token");
         return new Promise((resolve, reject) => {
@@ -348,6 +349,134 @@ let deleteUser = (req, res) => {
 
 }// end delete user
 
+//forget password functionality
+let forgetPassword = (req, res) => {
+
+    let validateUser = (req, res) => {
+        return new Promise((resolve, reject) => {
+            UserModel.findOne({ 'email': req.body.email }).exec((err, result) => {
+                if (err) {
+                    // console.log(err);
+                    logger.error(err.message, 'UserController:forgetPassword', 10);
+                    let apiResponse = response.generate(true, 'Failed to find User', 500, null);
+                    reject(apiResponse);
+                } else if (check.isEmpty(result)) {
+                    logger.info('No user Found', 'UserController:email search empty');
+                    let apiResponse = response.generate(true, 'No User Found', 404, null);
+                    reject(apiResponse);
+                } else {
+                    let output = {
+                        result: result,
+                        req: req
+                    }
+                    resolve(output);
+                }
+            })
+        })
+    }
+
+    let setOtp = (input) => {
+        return new Promise((resolve, reject) => {
+            const randomNumber = Math.floor(Math.random() * 899999 + 100000);
+            // console.log(time.now().format()); this is how to get current time.
+            let updateBody = {
+                otp: randomNumber,
+                otpExpiry: time.now().add(10, 'm').format(),
+            }
+            //DeprecationWarning: collection.update is deprecated. Use updateOne, updateMany, or bulkWrite instead.
+            UserModel.updateOne({ 'email': input.req.body.email }, updateBody).exec((err, results) => {
+                if (err) {
+                    console.log(err)
+                    logger.error(err.message, 'userController:dbSaveUser', 10)
+                    let apiResponse = response.generate(true, 'Failed to update otp', 400, null);
+                    reject(apiResponse);
+                } else {
+                    let output = {
+                        randomNumber: randomNumber,
+                        result: input.result
+                    }
+                    resolve(output);
+                }
+            })
+        })
+    }
+
+    let mailer = (input) => {
+        return new Promise((resolve, reject) => {
+            mailerLib.mail(input.result.email, input.result.firstName, input.randomNumber, (err, mailResponse) => {
+                if (err) {
+                    console.log(err);
+                    logger.error(err.message, 'UserController:mailsend', 10);
+                    let apiResponse = response.generate(true, 'Failed to send mail', 500, null);
+                    reject(apiResponse);
+                } else {
+                    resolve(mailResponse);
+                }
+            })
+        })
+    }
+
+    validateUser(req, res)
+        .then(setOtp)
+        .then(mailer)
+        .then((mailResponse) => {
+            let apiResponse = response.generate(false, 'OTP sent to email', 200, mailResponse);
+            res.send(apiResponse)
+        })
+        .catch((err) => {
+            console.log(err);
+            res.send(err);
+        })
+}
+
+let resetPassword = (req, res) => {
+
+    let validateUser = (req, res) => {
+        return new Promise((resolve, reject) => {
+            let condition = { email: req.body.email, otp: req.body.otp, otpExpiry: { $gt: time.now().format() } }
+            UserModel.findOne((condition).exec((err, result) => {
+                if (err) {
+                    console.log(err)
+                    logger.error(err.message, 'userController:validateOTP', 10)
+                    let apiResponse = response.generate(true, 'OTP Discarded', 400, null);
+                    reject(apiResponse);
+                } else {
+                    resolve(req)
+                }
+            }))
+        })
+    }//end of validateUser
+
+    let updatePassword = (req) => {
+        return new Promise((resolve, reject) => {
+            let condition = { 'email': input.req.body.email };
+            UserModel.updateOne(condition, req.body.password).exec((err, result) => {
+                if (err) {
+                    console.log(err)
+                    logger.error(err.message, 'userController:updatePassword', 10)
+                    let apiResponse = response.generate(true, 'Password Not Updated', 400, null);
+                    reject(apiResponse);
+                } else {
+                    resolve(result)
+                }
+            })
+        })
+    }
+
+    validateUser(req, res)
+        .then(updatePassword)
+        .then((result) => {
+            let apiResponse = response.generate(false, 'OTP sent to email', 200, result);
+            res.send(apiResponse);
+        })
+        .catch((err) => {
+            console.log(err);
+            res.send(err);
+        })
+}
+
+
+
 module.exports = {
     signUpFunction: signUpFunction,
     loginFunction: loginFunction,
@@ -355,5 +484,7 @@ module.exports = {
     getAllUser: getAllUser,
     getSingleUser: getSingleUser,
     logout: logout,
-    deleteUser: deleteUser
+    deleteUser: deleteUser,
+    forgetPassword: forgetPassword,
+    resetPassword: resetPassword
 }
