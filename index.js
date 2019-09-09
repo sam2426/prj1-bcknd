@@ -7,6 +7,7 @@ const mongoose = require('mongoose');
 const cookieParser = require('cookie-parser');
 const bodyParser = require('body-parser');
 const routeLoggerMiddleware = require('./app/middlewares/routeLogger.js');
+const logger=require('./app/libs/loggerLib');
 
 
 const modelsPath = './app/models';
@@ -88,9 +89,9 @@ function onListening() {
  */
 mongoose.connection.on('error', function (err) {
   console.log('database connection error');
-  console.log(err)
-  logger.error(err,'mongoose connection on error handler', 10)
-  process.exit(1)
+  console.log(err);
+  // logger.error(err,'mongoose connection on error handler', 10);
+  // process.exit(1)
 }); // end mongoose connection error
 
 mongoose.connection.on('open', function (err) {
@@ -102,6 +103,6 @@ mongoose.connection.on('open', function (err) {
     console.log("database connection open success");
     logger.info("database connection open",'database connection open handler', 10)
   }
-  process.exit(1)
+  //process.exit(1)
 }); //end mongoose connection open handler
 

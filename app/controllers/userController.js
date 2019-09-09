@@ -232,7 +232,7 @@ let loginFunction = (req, res) => {
         .catch((err) => {
             console.log("errorhandler");
             console.log(err);
-            res.status(err.status)
+            // res.status(err.status)
             res.send(err)
         })
 }
@@ -378,7 +378,7 @@ let forgetPassword = (req, res) => {
     let setOtp = (input) => {
         return new Promise((resolve, reject) => {
             const randomNumber = Math.floor(Math.random() * 899999 + 100000);
-            // console.log(time.now().format()); this is how to get current time.
+            console.log(time.now().format()); //this is how to get current time.
             let updateBody = {
                 otp: randomNumber,
                 otpExpiry: time.now().add(10, 'm').format(),
@@ -434,23 +434,31 @@ let resetPassword = (req, res) => {
     let validateUser = (req, res) => {
         return new Promise((resolve, reject) => {
             let condition = { email: req.body.email, otp: req.body.otp, otpExpiry: { $gt: time.now().format() } }
-            UserModel.findOne((condition).exec((err, result) => {
+            UserModel.findOne(condition,(err, result) => {
                 if (err) {
                     console.log(err)
                     logger.error(err.message, 'userController:validateOTP', 10)
                     let apiResponse = response.generate(true, 'OTP Discarded', 400, null);
                     reject(apiResponse);
-                } else {
+                } else if (check.isEmpty(result)) {
+                    logger.info('OTP Discarded', 'UserController:validateOTP',5);
+                    let apiResponse = response.generate(true, 'OTP Discarded', 404, null);
+                    reject(apiResponse);
+                }else {
                     resolve(req)
                 }
-            }))
+            })
         })
     }//end of validateUser
 
     let updatePassword = (req) => {
         return new Promise((resolve, reject) => {
-            let condition = { 'email': input.req.body.email };
-            UserModel.updateOne(condition, req.body.password).exec((err, result) => {
+            let condition = { 'email': req.body.email };
+            let pass={
+                password: passwordLib.hashpassword(req.body.password),
+                otp:0
+            }
+            UserModel.updateOne(condition, pass).exec((err, result) => {
                 if (err) {
                     console.log(err)
                     logger.error(err.message, 'userController:updatePassword', 10)
@@ -466,7 +474,7 @@ let resetPassword = (req, res) => {
     validateUser(req, res)
         .then(updatePassword)
         .then((result) => {
-            let apiResponse = response.generate(false, 'OTP sent to email', 200, result);
+            let apiResponse = response.generate(false, 'Password Updated', 200, result);
             res.send(apiResponse);
         })
         .catch((err) => {
