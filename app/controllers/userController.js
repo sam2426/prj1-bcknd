@@ -3,6 +3,8 @@ const shortid = require('shortid');
 const UserModel = require('./../models/User');
 const AuthModel = require('./../models/auth');
 
+const friendsController=require('./friendsController');
+
 const check = require('../libs/checkLib');
 const logger = require('./../libs/loggerLib');
 const mailerLib = require('./../libs/mailerLib');
@@ -81,13 +83,31 @@ let signUpFunction = (req, res) => {
         })
     }//createUser function ends
 
+    let insertIntoFriendList=(userObj)=>{
+        return new Promise((resolve,reject)=>{
+            friendsController.createRecords(userObj,(err,isCreated)=>{
+                if(err){
+                    console.log(err)
+                    logger.error(err.message, 'insertIntoFriendList:dbCreateList', 10)
+                    let apiResponse = response.generate(true, 'Failed to create friendList', 400, null);
+                    reject(apiResponse);
+                }else{
+                    //here have to use isCreated object as a transport to pass the inherited object.
+                    isCreated.userObj=userObj; 
+                    resolve(isCreated);
+                }
+            })
+        })
+    }
+
     validateUserInput(req, res)
         .then(createUser)
+        .then(insertIntoFriendList)
         .then((resolve) => {
-            delete resolve.password;
-            delete resolve._id;
-            delete resolve.__v;
-            let apiResponse = response.generate(false, 'user created', 200, resolve);
+            delete resolve.userObj.password;
+            delete resolve.userObj._id;
+            delete resolve.userObj.__v;
+            let apiResponse = response.generate(false, 'user created', 200, resolve.userObj);
             res.send(apiResponse)
         })
         .catch((err) => {
@@ -236,15 +256,16 @@ let loginFunction = (req, res) => {
         .then(generateToken)
         .then(saveToken)
         .then((resolve) => {
-            let apiResponse = response.generate(false, 'Login Successful', 200, resolve)
-            res.status(200)
+            let apiResponse = response.generate(false, 'Login Successful', 200, resolve);
+            // res.status(200)
             res.send(apiResponse)
         })
         .catch((err) => {
             console.log("errorhandler");
             console.log(err);
+            let apiResponse = response.generate(true, 'Login Unsuccessful', 500, null);
             // res.status(err.status)
-            res.send(err)
+            res.send(apiResponse);
         })
 }
 
