@@ -43,6 +43,14 @@ const userSchema = new Schema({
     createdOn: {
         type: time,
         default: ''
+    },
+    gender:{
+        type:String,
+        default:'Male'
+    },
+    profilePic:{
+        type:String,
+        default:''
     }
 })
 

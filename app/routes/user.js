@@ -11,10 +11,12 @@ module.exports.setRouter = (app) =>{
 
     app.post(`${baseUrl}/login`, userController.loginFunction);
 
-    app.get(`${baseUrl}/view/all`,userController.getAllUser);
+    // app.get(`${baseUrl}/view/all`,userController.getAllUser);
 
     app.get(`${baseUrl}/:userId/details`, userController.getSingleUser);
 
+    app.get(`${baseUrl}/:userId/allFriends`, userController.getAllUser);
+    
     app.put(`${baseUrl}/:userId/edit`, userController.editUser);
 
     app.post(`${baseUrl}/:userId/delete`, userController.deleteUser);
@@ -24,6 +26,8 @@ module.exports.setRouter = (app) =>{
     app.post(`${baseUrl}/forgetPassword`, userController.forgetPassword);
 
     app.post(`${baseUrl}/resetPassword`, userController.resetPassword);
+
+    app.post(`${baseUrl}/uploadImage`, userController.uploadImage);
 
 }
 

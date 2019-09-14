@@ -7,6 +7,7 @@ const check = require('../libs/checkLib');
 const logger = require('./../libs/loggerLib');
 const mailerLib = require('./../libs/mailerLib');
 const passwordLib = require('./../libs/generatePasswordLib');
+const profilePicUploadLib = require('./../libs/profilePicUploadLib');
 const response = require('./../libs/responseLib');
 const time = require('./../libs/timeLib');
 const token = require('./../libs/tokenLib');
@@ -56,7 +57,8 @@ let signUpFunction = (req, res) => {
                             email: req.body.email.toLowerCase(),
                             mobileNumber: req.body.mobileNumber,
                             password: passwordLib.hashpassword(req.body.password),
-                            createdOn: time.now()
+                            createdOn: time.now(),
+                            profilePic:req.body.profilePic,
                         })
                         newUser.save((err, newUser) => {
                             if (err) {
@@ -93,6 +95,15 @@ let signUpFunction = (req, res) => {
             res.send(err);
         })
 } // end of user signUp
+
+const singleUpload=profilePicUploadLib.upload.single('image');
+let uploadImage=(req,res)=>{
+    singleUpload(req,res,(err)=>{
+        let apiResponse=response.generate(false,'File Uploaded', 200, req.file.location);
+        return res.send(apiResponse);
+    })
+}
+
 
 // start of login function 
 let loginFunction = (req, res) => {
@@ -137,7 +148,7 @@ let loginFunction = (req, res) => {
                 } else if (isMatch) {
                     let retrievedUserDetailsObj = retrievedUserDetails.toObject();
                     delete retrievedUserDetailsObj.password
-                    delete retrievedUserDetailsObj._id
+                    // delete retrievedUserDetailsObj._id
                     delete retrievedUserDetailsObj.__v
                     delete retrievedUserDetailsObj.createdOn
                     delete retrievedUserDetailsObj.modifiedOn
@@ -261,7 +272,7 @@ let editUser = (req, res) => {
 
 /* Get all user Details */
 let getAllUser = (req, res) => {
-    UserModel.find()
+    UserModel.find({'userId':{$ne:req.params.userId}})
         .select(' -__v -_id -password')
         .lean()
         .exec((err, result) => {
@@ -284,8 +295,9 @@ let getAllUser = (req, res) => {
 
 /* Get single user details use it for profile view */
 let getSingleUser = (req, res) => {
+    console.log(req.params.userId);
     UserModel.findOne({ 'userId': req.params.userId })
-        .select('-password -__v -_id')
+        .select('-password -__v -_id -otp -otpExpiry')
         .lean()
         .exec((err, result) => {
             if (err) {
@@ -483,7 +495,27 @@ let resetPassword = (req, res) => {
         })
 }
 
+// let allUser=(req,res)=>{
+//     UserModel.find()
+//         .select(' -__v -_id -password')
+//         .lean()
+//         .exec((err, result) => {
+//             if (err) {
+//                 console.log(err)
+//                 logger.error(err.message, 'User Controller: getAllUser', 10)
+//                 let apiResponse = response.generate(true, 'Failed To Find User Details', 500, null)
+//                 res.send(apiResponse)
+//             } else if (check.isEmpty(result)) {
+//                 logger.info('No User Found', 'User Controller: getAllUser', 10)
+//                 let apiResponse = response.generate(true, 'No User Found', 404, null)
+//                 res.send(apiResponse)
+//             } else {
+//                 let apiResponse = response.generate(false, 'All User Details Found', 200, result)
+//                 res.send(apiResponse)
+//             }
+//         })
 
+// }
 
 module.exports = {
     signUpFunction: signUpFunction,
@@ -494,5 +526,7 @@ module.exports = {
     logout: logout,
     deleteUser: deleteUser,
     forgetPassword: forgetPassword,
-    resetPassword: resetPassword
+    resetPassword: resetPassword,
+    uploadImage:uploadImage,
+    // allUsers: allUsers,
 }
