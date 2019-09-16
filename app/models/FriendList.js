@@ -5,7 +5,7 @@ const time= require('./../libs/timeLib');
 const friendListSchema=new Schema({
     friendObject:{
         type:Schema.Types.ObjectId,
-        default:'',
+        ref:'User',
     },
     friendId:{
         type:String,
@@ -41,7 +41,7 @@ const friendsSchema=new Schema({
         default:0,
     },
     allFriends:{
-        type:[friendListSchema],
+        type:[friendListSchema]
     }
 })
 

@@ -51,7 +51,12 @@ const userSchema = new Schema({
     profilePic:{
         type:String,
         default:''
-    }
+    },
+    friendList:{
+        type:Schema.Types.ObjectId,
+        ref:'Friends',
+        unique:true,
+    },
 })
 
 

@@ -59,7 +59,7 @@ let signUpFunction = (req, res) => {
                             email: req.body.email.toLowerCase(),
                             mobileNumber: req.body.mobileNumber,
                             password: passwordLib.hashpassword(req.body.password),
-                            createdOn: time.now(),
+                            createdOn: time.now().format(),
                             profilePic:req.body.profilePic,
                         })
                         newUser.save((err, newUser) => {
@@ -92,9 +92,24 @@ let signUpFunction = (req, res) => {
                     let apiResponse = response.generate(true, 'Failed to create friendList', 400, null);
                     reject(apiResponse);
                 }else{
+                    UserModel.findByIdAndUpdate(userObj._id,{friendList:isCreated._id},{new: true})
+                        // an option that asks mongoose to return the updated version 
+                        // of the document instead of the pre-updated one.
+                        // {new: true})
+                    .exec((err,retrieveddetails)=>{
+                        if(err){
+                            logger.error(err.message, 'userController:insertListID', 10);
+                            let apiResponse = response.generate(true, 'failed to insert FriendListId', 400, null);
+                            reject(apiResponse);    
+                        }
+                        else{
+                            let output=retrieveddetails.toObject();
+                            resolve(output)
+                        }
+                    })
                     //here have to use isCreated object as a transport to pass the inherited object.
-                    isCreated.userObj=userObj; 
-                    resolve(isCreated);
+                    // isCreated.userObj=userObj; 
+                    // resolve(isCreated);
                 }
             })
         })
@@ -104,10 +119,13 @@ let signUpFunction = (req, res) => {
         .then(createUser)
         .then(insertIntoFriendList)
         .then((resolve) => {
-            delete resolve.userObj.password;
-            delete resolve.userObj._id;
-            delete resolve.userObj.__v;
-            let apiResponse = response.generate(false, 'user created', 200, resolve.userObj);
+            delete resolve.password;
+            delete resolve._id;
+            delete resolve.__v;
+            delete resolve.friendList;
+            delete resolve.otp;
+            delete resolve,otpExpiry;
+            let apiResponse = response.generate(false, 'user created', 200, resolve);
             res.send(apiResponse)
         })
         .catch((err) => {
@@ -212,7 +230,7 @@ let loginFunction = (req, res) => {
                         userId: tokenDetails.userId,
                         authToken: tokenDetails.token,
                         tokenSecret: tokenDetails.tokenSecret,
-                        tokenGenerationTime: time.now()
+                        tokenGenerationTime: time.now().format(),
                     })
                     newAuthToken.save((err, newTokenDetails) => {
                         if (err) {
@@ -231,7 +249,7 @@ let loginFunction = (req, res) => {
                 } else {
                     retrievedTokenDetails.authToken = tokenDetails.token;
                     retrievedTokenDetails.tokenSecret = tokenDetails.tokenSecret;
-                    retrievedTokenDetails.tokenGenerationTime = time.now();
+                    retrievedTokenDetails.tokenGenerationTime = time.now().format();
                     retrievedTokenDetails.save((err, newTokenDetails) => {
                         if (err) {
                             console.log(err)
@@ -293,26 +311,110 @@ let editUser = (req, res) => {
 
 /* Get all user Details */
 let getAllUser = (req, res) => {
-    UserModel.find({'userId':{$ne:req.params.userId}})
+   
+    let friends=()=>{
+        return new Promise((resolve,reject)=>{
+            friendsController.usersFriend(req.params.userId,(err,response)=>{
+                if(err){
+                    console.log(err);
+                    reject('friends not found');
+                }
+                else{
+                    // console.log(response);
+                    let arr=response.concat(req.params.userId);
+                    // console.log(arr);
+                    resolve(arr);
+                }
+            })
+        })
+    }
+    let findFriends=(arr)=>{
+        return new Promise((resolve,reject)=>{
+        UserModel.find({'userId':{$nin:arr}})
         .select(' -__v -_id -password')
+        .populate('friendList')
         .lean()
         .exec((err, result) => {
             if (err) {
                 console.log(err)
                 logger.error(err.message, 'User Controller: getAllUser', 10)
                 let apiResponse = response.generate(true, 'Failed To Find User Details', 500, null)
-                res.send(apiResponse)
+                reject(apiResponse)
             } else if (check.isEmpty(result)) {
-                logger.info('No User Found', 'User Controller: getAllUser', 10)
+                logger.error('No User Found', 'User Controller: getAllUser', 10)
                 let apiResponse = response.generate(true, 'No User Found', 404, null)
-                res.send(apiResponse)
+                reject(apiResponse)
             } else {
                 let apiResponse = response.generate(false, 'All User Details Found', 200, result)
-                res.send(apiResponse)
+                resolve(apiResponse)
             }
         })
+        })
+    }
+
+    friends(req,res)
+    .then(findFriends)
+    .then((resolve)=>{
+        res.send(resolve)
+    })
+    .catch((apiResponse)=>{
+        res.send(apiResponse);
+    })
 }// end get all users
 
+/* Get all user Details */
+let getAllFriends= (req, res) => {
+   
+    let friends=()=>{
+        return new Promise((resolve,reject)=>{
+            friendsController.usersFriend(req.params.userId,(err,response)=>{
+                if(err){
+                    console.log(err);
+                    reject('friends not found');
+                }
+                else{
+                    // console.log(response);
+                    //let arr=response.concat(req.params.userId);
+                    // console.log(arr);
+                    resolve(response);
+                }
+            })
+        })
+    }
+    let findFriends=(arr)=>{
+        return new Promise((resolve,reject)=>{
+            let include='$in'
+        UserModel.find({'userId':{$in:arr}})
+        .select(' -__v -_id -password')
+        .populate('friendList')
+        .lean()
+        .exec((err, result) => {
+            if (err) {
+                console.log(err)
+                logger.error(err.message, 'User Controller: getAllUser', 10)
+                let apiResponse = response.generate(true, 'Failed To Find User Details', 500, null)
+                reject(apiResponse)
+            } else if (check.isEmpty(result)) {
+                logger.error('No User Found', 'User Controller: getAllUser', 10)
+                let apiResponse = response.generate(true, 'No User Found', 404, null)
+                reject(apiResponse)
+            } else {
+                let apiResponse = response.generate(false, 'All User Details Found', 200, result)
+                resolve(apiResponse)
+            }
+        })
+        })
+    }
+
+    friends(req,res)
+    .then(findFriends)
+    .then((resolve)=>{
+        res.send(resolve)
+    })
+    .catch((apiResponse)=>{
+        res.send(apiResponse);
+    })
+}// end get all users
 
 /* Get single user details use it for profile view */
 let getSingleUser = (req, res) => {
@@ -543,6 +645,7 @@ module.exports = {
     loginFunction: loginFunction,
     editUser: editUser,
     getAllUser: getAllUser,
+    getAllFriends:getAllFriends,
     getSingleUser: getSingleUser,
     logout: logout,
     deleteUser: deleteUser,
