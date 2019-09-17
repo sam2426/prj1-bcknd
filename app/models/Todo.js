@@ -23,7 +23,7 @@ const todoSchema=new Schema({
         default:'',
     },
     childNodes:{
-        type:Schema.Types.ObjectId,
+        type:[Schema.Types.ObjectId],
         ref:'Todo',
     }
       

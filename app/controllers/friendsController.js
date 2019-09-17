@@ -57,7 +57,7 @@ let addFriend = (req, res) => {
 
     let updateReceiverRecords = () => {
         return new Promise((resolve, reject) => {
-            updateRecord(req.body.receiverUserId, req.body.senderUserId, 'received', (err, reresponse) => {
+            updateRecord(req.body.receiverUserId, req.body.senderUserId,  'received', (err, reresponse) => {
                 if (err) {
                     console.log(err)
                     logger.error(err, 'friendController:addRecord', 10)
@@ -247,15 +247,20 @@ let acceptFriendRequest =(req,res)=>{
             }
             else {
                 const index = userDetails.allFriends.findIndex(obj => obj['friendId'] === id2);
-                console.log(userDetails.allFriends[index]);
-                userDetails.allFriends[index].friendSince=time.now();
-                userDetails.save((err, updateResponse) => {
-                    if (err) {
-                        return cb(err, null);
-                    } else {
-                        return cb(null, updateResponse);
-                    }
-                })
+                if (index >= 0) {
+                    console.log(userDetails.allFriends[index]);
+                    userDetails.allFriends[index].friendSince = time.now();
+                    userDetails.save((err, updateResponse) => {
+                        if (err) {
+                            return cb(err, null);
+                        } else {
+                            return cb(null, updateResponse);
+                        }
+                    })
+                }else{
+                    return cb('Unable to Process Request',null);
+                }
+
             }
         })
     }
@@ -288,7 +293,7 @@ let usersFriend=(userId,cb)=>{
         }
         
     })
-    console.log('my arr is '+friendsarr);
+    // console.log('my arr is '+friendsarr);
     // return friendsarr;
 }
 

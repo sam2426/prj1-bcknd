@@ -124,7 +124,7 @@ let signUpFunction = (req, res) => {
             delete resolve.__v;
             delete resolve.friendList;
             delete resolve.otp;
-            delete resolve,otpExpiry;
+            delete resolve.otpExpiry;
             let apiResponse = response.generate(false, 'user created', 200, resolve);
             res.send(apiResponse)
         })
@@ -137,8 +137,14 @@ let signUpFunction = (req, res) => {
 const singleUpload=profilePicUploadLib.upload.single('image');
 let uploadImage=(req,res)=>{
     singleUpload(req,res,(err)=>{
-        let apiResponse=response.generate(false,'File Uploaded', 200, req.file.location);
-        return res.send(apiResponse);
+        if(err){
+            let apiResponse=apiResponse.generate(true,'File Not Uploaded', 400, null);
+            res.send(apiResponse);
+        }else{
+            let apiResponse=response.generate(false,'File Uploaded', 200, req.file.location);
+            res.send(apiResponse);
+        }
+        
     })
 }
 
