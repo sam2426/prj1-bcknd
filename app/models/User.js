@@ -57,6 +57,14 @@ const userSchema = new Schema({
         ref:'Friends',
         unique:true,
     },
+    userTodo:{
+        type:[Schema.Types.ObjectId],
+        ref:'Todo'
+    },
+    groupTodo:{
+        type:[Schema.Types.ObjectId],
+        ref:'Todo'
+    }
 })
 
 

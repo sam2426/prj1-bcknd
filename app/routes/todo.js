@@ -13,9 +13,13 @@ module.exports.setRouter = (app) =>{
 
     app.post(`${baseUrl}/getTodo`, todoController.getResult);
 
-    // app.post(`${baseUrl}/getTodo`, todoExpr.getTodo);
+    app.get(`${baseUrl}/:userId/getHeaders`, todoController.getHeaders);
 
+    app.post(`${baseUrl}/edit`, todoController.editTodo);
 
+    app.post(`${baseUrl}/delete`, todoController.deleteTodo);
+
+    app.post(`${baseUrl}/deleteHead`, todoController.deleteInitiatorTodo);
 
 }
 

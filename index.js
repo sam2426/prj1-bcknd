@@ -80,7 +80,11 @@ function onListening() {
   // ('Listening on ' + bind);
   // logger.info('server listening on port' + addr.port, 'serverOnListeningHandler', 10);
   console.log('running on port 3000');
-  let db = mongoose.connect(appConfig.db.uri, { useNewUrlParser: true });
+  // let db = mongoose.connect(appConfig.db.uri, { useNewUrlParser: true });
+  options={ useNewUrlParser: true,
+            useFindAndModify: false,
+            useCreateIndex:true};
+  let db = mongoose.connect(appConfig.db.uri, options);
 }
 
 

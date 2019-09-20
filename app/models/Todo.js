@@ -8,15 +8,18 @@ const todoSchema=new Schema({
         default:'',
         required:true,
     },
-    todo:{
+    todoBody:{
         type:String,
         default:'',
-        required:true,
     },
     contributors:{
         type:[],
-        default:[],
+        // default:[],
         required:true,
+    },
+    type:{
+        type:String,
+        default:'child',    
     },
     time:{
         type:time,
