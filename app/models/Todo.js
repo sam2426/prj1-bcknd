@@ -28,8 +28,12 @@ const todoSchema=new Schema({
     childNodes:{
         type:[Schema.Types.ObjectId],
         ref:'Todo',
+    },
+    showChildren:{
+        type:Boolean,
+        default:false,
+        required:true,
     }
-      
 })
 
 module.exports = mongoose.model('Todo', todoSchema);

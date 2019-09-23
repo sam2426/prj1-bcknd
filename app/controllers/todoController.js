@@ -252,16 +252,18 @@ let getResult = (req, res) => {
 
 let getHeaders=(req,res)=>{
     // req.params.userId
-    TodoModel.find({contributors:req.params.userId},(err,response)=>{
+    TodoModel.find({contributors:req.params.userId, type:'header'},(err,data)=>{
         if(err){
             console.log(err);
             let apiResponse=response.generate(true,'Failed to find Headers',400,null);
             res.send(apiResponse);
         }else if(check.isEmpty(response)){
+            console.log('empty');
             let apiResponse=response.generate(true,'No Todos created yet!',400,null);
             res.send(apiResponse);
         }else{
-            let apiResponse=response.generate(false,'Todo Edited',200,response);
+            console.log(data);
+            let apiResponse=response.generate(false,'Todo Edited',200,data);
             res.send(apiResponse);
         }
     })
